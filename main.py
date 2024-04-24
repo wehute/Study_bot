@@ -47,7 +47,7 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 
 async def about_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /about is issued."""
-    await update.message.reply_text("Я линг кинг екелемене")
+    await update.message.reply_text("кто я")
 
 async def echo(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Echo the user message."""
