@@ -25,19 +25,63 @@ START_ROUTES, END_ROUTES = range(2)
 # Callback data
 STAGE_ONE, STAGE_TWO, STAGE_THREE, STAGE_FOUR = range(4)
 
+def grouped(array, num=3):
+    return [array[i:i+num] for i in range(0, len(array), num)]
+
+class Section:
+    id: int
+    name: str
+    text: str
+
+    key = 'section_'
+
+    def __init__(self, id: int, name: str, text: str = ''):
+        self.id = id
+        self.name = name
+        self.text = text
+
+    def get_inline_button(self):
+        return InlineKeyboardButton(self.name, callback_data=self.key + str(self.id))
+
+class Course:
+    id: int
+    name: str
+    sections: list
+
+    key = 'course_'
+
+    def __init__(self, id: int, name: str, sections: list):
+        self.id = id
+        self.name = name
+        self.sections = sections
+
+    def get_inline_button(self):
+        return InlineKeyboardButton(self.name, callback_data=self.key + str(self.id))
+
+
+COURSES = [
+    Course(1, 'Python', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')]),
+    Course(2, 'SQL', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')]),
+    Course(3, 'PHP', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')]),
+    Course(4, 'Telegram', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')]),
+    Course(5, 'HTML', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')]),
+]
+
+def get_course_by_course_key(course_key):
+    id = int(course_key.replace(Course.key, ''))
+
+    for c in COURSES:
+        if c.id == id:
+            return c
+        
+    return None
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Sends a message with three inline buttons attached."""
-    keyboard = [
-        [
-            InlineKeyboardButton("Python", callback_data="1"),
-            InlineKeyboardButton("SQL", callback_data="2"),
-            InlineKeyboardButton("PHP", callback_data="3"),
-            InlineKeyboardButton("Telegram", callback_data="2"),
-            InlineKeyboardButton("HTML", callback_data="5"),
-        ],
-        [InlineKeyboardButton("Random", callback_data="0")],
-    ]
+
+    courses = grouped([c.get_inline_button() for c in COURSES], 3)
+    
+    keyboard = courses
 
     reply_markup = InlineKeyboardMarkup(keyboard)
 
@@ -63,19 +107,18 @@ async def one(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Displays info on how to use the bot."""
     await update.message.reply_text("STAGE 1")
 
-async def one(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def course_detail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     """Show new choice of buttons"""
     query = update.callback_query
+    course = get_course_by_course_key(query.data)
+
+    section_keyboard = grouped([s.get_inline_button() for s in course.sections], 3)
+
     await query.answer()
-    keyboard = [
-        [
-            InlineKeyboardButton("3", callback_data=str(STAGE_THREE)),
-            InlineKeyboardButton("4", callback_data=str(STAGE_FOUR)),
-        ]
-    ]
+    keyboard = section_keyboard
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(
-        text="First CallbackQueryHandler, Choose a route", reply_markup=reply_markup
+        text=f'Курс по: {course.name}', reply_markup=reply_markup
     )
     return START_ROUTES
 
@@ -93,10 +136,7 @@ def main() -> None:
         entry_points=[CommandHandler("start", start)],
         states={
             START_ROUTES: [
-                CallbackQueryHandler(one, pattern="^" + str(STAGE_ONE) + "$"),
-                # CallbackQueryHandler(two, pattern="^" + str(TWO) + "$"),
-                # CallbackQueryHandler(three, pattern="^" + str(THREE) + "$"),
-                # CallbackQueryHandler(four, pattern="^" + str(FOUR) + "$"),
+                CallbackQueryHandler(course_detail, pattern="^" + Course.key),
             ],
             # END_ROUTES: [
                 # CallbackQueryHandler(start_over, pattern="^" + str(ONE) + "$"),
