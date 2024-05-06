@@ -47,25 +47,59 @@ class Course:
     id: int
     name: str
     sections: list
+    text: str
 
     key = 'course_'
 
-    def __init__(self, id: int, name: str, sections: list):
+    def __init__(self, id: int, name: str, sections: list, text: str = ''):
         self.id = id
         self.name = name
         self.sections = sections
+        self.text = text
 
     def get_inline_button(self):
         return InlineKeyboardButton(self.name, callback_data=self.key + str(self.id))
+    
+# class Class:
+#     id: int
+#     name: str
+#     text: str
+
+#     key = 'class_'
+
+#     def __init__(self, id: int, name: str, sections: list, text: str = ''):
+#         self.id = id
+#         self.name = name
+#         self.text = text
+
+#     def get_inline_button(self):
+#         return InlineKeyboardButton(self.name, callback_data=self.key + str(self.id))
+
 
 
 COURSES = [
-    Course(1, 'Python', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')]),
-    Course(2, 'SQL', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')]),
-    Course(3, 'PHP', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')]),
-    Course(4, 'Telegram', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')]),
-    Course(5, 'HTML', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')]),
+    Course(1, 'Python', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')],'Курс посвящен базовым понятиям и элементам языка программирования Python'),
+    Course(2, 'SQL', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')], 'Курс направлен на практическое изучение языка SQL с получением минимально необходимых основ теории баз данных.'),
+    Course(3, 'PHP', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')], 'Курс ылвоаоылва'),
+    Course(4, 'Telegram', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')],'Курс посвящен изучению функциональных способностей Telegram.'),
+    Course(5, 'HTML', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')],'помогите'),
 ]
+
+# CLASSES = [
+#     Class(1, 'Урок 1', [Section(1, 'Вернуться'),Section(2, 'Следующий урок')], 'Это первый урок курса капитошка'),
+#     Class(2, 'Урок 2'),
+#     Class(3, 'Урок 3'),
+
+# ]
+
+# def get_class_by_class_key(class_key):
+#     id = int(class_key.replace(Class.key, ''))
+
+#     for s in CLASSES:
+#         if s.id == id:
+#             return s
+        
+#     return None
 
 def get_course_by_course_key(course_key):
     id = int(course_key.replace(Course.key, ''))
@@ -118,8 +152,9 @@ async def course_detail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     keyboard = section_keyboard
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(
-        text=f'Курс по: {course.name}', reply_markup=reply_markup
+        text=f'Курс по: {course.name} \n{course.text}', reply_markup=reply_markup
     )
+
     return START_ROUTES
 
 def main() -> None:
