@@ -25,6 +25,11 @@ START_ROUTES, END_ROUTES = range(2)
 # Callback data
 STAGE_ONE, STAGE_TWO, STAGE_THREE, STAGE_FOUR = range(4)
 
+actual = {
+    'course': None,
+    'section': None,
+}
+
 def grouped(array, num=3):
     return [array[i:i+num] for i in range(0, len(array), num)]
 
@@ -56,25 +61,21 @@ class Course:
         self.name = name
         self.sections = sections
         self.text = text
+    
+    @property
+    def route_key(self):
+        return self.key + str(self.id)
 
     def get_inline_button(self):
-        return InlineKeyboardButton(self.name, callback_data=self.key + str(self.id))
+        return InlineKeyboardButton(self.name, callback_data=self.route_key)
     
-# class Class:
-#     id: int
-#     name: str
-#     text: str
+    def get_back_button(self):
+        return InlineKeyboardButton('Назад', callback_data=self.route_key)
+    
+    def get_section_of_string(self, string):
+        pk = get_id_of_str(string, Section.key)
 
-#     key = 'class_'
-
-#     def __init__(self, id: int, name: str, sections: list, text: str = ''):
-#         self.id = id
-#         self.name = name
-#         self.text = text
-
-#     def get_inline_button(self):
-#         return InlineKeyboardButton(self.name, callback_data=self.key + str(self.id))
-
+        return get_item_of_list_by_id(self.sections, pk)
 
 
 COURSES = [
@@ -85,30 +86,20 @@ COURSES = [
     Course(5, 'HTML', [Section(1, 'Урок 1'),Section(2, 'Урок 2'),Section(3, 'Урок 3')],'помогите'),
 ]
 
-# CLASSES = [
-#     Class(1, 'Урок 1', [Section(1, 'Вернуться'),Section(2, 'Следующий урок')], 'Это первый урок курса капитошка'),
-#     Class(2, 'Урок 2'),
-#     Class(3, 'Урок 3'),
+def get_id_of_str(string, k=Course.key):
+    return int(string.replace(k, ''))
 
-# ]
-
-# def get_class_by_class_key(class_key):
-#     id = int(class_key.replace(Class.key, ''))
-
-#     for s in CLASSES:
-#         if s.id == id:
-#             return s
-        
-#     return None
-
-def get_course_by_course_key(course_key):
-    id = int(course_key.replace(Course.key, ''))
-
-    for c in COURSES:
-        if c.id == id:
+def get_item_of_list_by_id(items: list, pk: int):
+    for c in items:
+        if c.id == pk:
             return c
         
     return None
+
+def get_course_by_course_key(course_key):
+    pk = get_id_of_str(course_key, Course.key)
+        
+    return get_item_of_list_by_id(COURSES, pk)
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Sends a message with three inline buttons attached."""
@@ -146,6 +137,8 @@ async def course_detail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     query = update.callback_query
     course = get_course_by_course_key(query.data)
 
+    actual['course'] = course
+
     section_keyboard = grouped([s.get_inline_button() for s in course.sections], 3)
 
     await query.answer()
@@ -153,6 +146,31 @@ async def course_detail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> i
     reply_markup = InlineKeyboardMarkup(keyboard)
     await query.edit_message_text(
         text=f'Курс по: {course.name} \n{course.text}', reply_markup=reply_markup
+    )
+
+    return START_ROUTES
+
+async def section_detail(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    """Show new choice of buttons"""
+    query = update.callback_query
+    # course = get_course_by_course_key(query.data)
+    course = actual['course']
+    section = course.get_section_of_string(query.data)
+
+    actual['section'] = section
+
+    # section_keyboard = grouped([s.get_inline_button() for s in course.sections], 3)
+    section_keyboard = [
+        [
+            course.get_back_button(),
+        ]
+        ]
+
+    await query.answer()
+    keyboard = section_keyboard
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    await query.edit_message_text(
+        text=f'{section.name} \n{section.text}', reply_markup=reply_markup
     )
 
     return START_ROUTES
@@ -172,6 +190,7 @@ def main() -> None:
         states={
             START_ROUTES: [
                 CallbackQueryHandler(course_detail, pattern="^" + Course.key),
+                CallbackQueryHandler(section_detail, pattern="^" + Section.key),
             ],
             # END_ROUTES: [
                 # CallbackQueryHandler(start_over, pattern="^" + str(ONE) + "$"),
